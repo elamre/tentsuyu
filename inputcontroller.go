@@ -1,6 +1,6 @@
 package tentsuyu
 
-import "github.com/hajimehoshi/ebiten"
+import "github.com/hajimehoshi/ebiten/v2"
 
 //InputController controls all input for the game
 type InputController struct {
@@ -60,6 +60,13 @@ func (ic *InputController) GetMouseCoords() (float64, float64) {
 func (ic *InputController) GetGameMouseCoords(camera *Camera) (x, y float64) {
 	mx, my := ebiten.CursorPosition()
 	x, y = (float64(mx)+(camera.GetX()))/(camera.Zoom), (float64(my)+(camera.GetY()))/(camera.Zoom)
+	return x, y
+}
+
+//GetGameMouseCoordsOffset returns the game coords based on the camera position and zoom with added offsets
+func (ic *InputController) GetGameMouseCoordsOffset(camera *Camera, xOffset, yOffset float64) (x, y float64) {
+	mx, my := ebiten.CursorPosition()
+	x, y = (float64(mx)+(camera.GetX()+xOffset))/(camera.Zoom), (float64(my)+(camera.GetY()+yOffset))/(camera.Zoom)
 	return x, y
 }
 

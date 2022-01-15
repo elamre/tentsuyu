@@ -1,37 +1,33 @@
 package tentsuyu
 
 import (
-	"log"
-
 	"image/color"
 
 	"github.com/golang/freetype/truetype"
-	"github.com/hajimehoshi/ebiten"
-	txt "github.com/hajimehoshi/ebiten/text"
+	"github.com/hajimehoshi/ebiten/v2"
+	txt "github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 )
 
 //TextElement contains the font, text, and position of that current text element
 type TextElement struct {
-	dropShadow                           bool
-	font                                 *truetype.Font
-	Name                                 string
-	drawImage                            *ebiten.Image
-	fntSize, fntDpi                      float64
-	text, prevText                       []string
-	visible                              bool
-	Stationary                           bool
-	textColor, origColor, highlightColor color.Color
+	dropShadow                                      bool
+	font                                            *truetype.Font
+	Name                                            string
+	drawImage                                       *ebiten.Image
+	fntSize, fntDpi                                 float64
+	text, prevText                                  []string
+	visible                                         bool
+	Stationary                                      bool
+	textColor, origColor, highlightColor, dropColor color.Color
 	*BasicUIElement
 	fntFace font.Face
 }
 
 //NewTextElement returns a new TextElement and creates the image
 func NewTextElement(x, y float64, w, h int, fnt *truetype.Font, text []string, textColor color.Color, fntSize float64) *TextElement {
-	textImage, err := ebiten.NewImage(w, h, ebiten.FilterNearest)
-	if err != nil {
-		log.Fatal(err)
-	}
+	textImage := ebiten.NewImage(w, h)
+
 	t := &TextElement{
 		font:           fnt,
 		fntSize:        fntSize,
@@ -45,6 +41,10 @@ func NewTextElement(x, y float64, w, h int, fnt *truetype.Font, text []string, t
 		visible:        true,
 		highlightColor: color.RGBA{153, 153, 0, 255},
 		dropShadow:     true,
+		dropColor:      color.Black,
+	}
+	if t.textColor == color.Black {
+		t.dropColor = color.White
 	}
 	t.fntFace = truetype.NewFace(t.font, &truetype.Options{
 		Size:    t.fntSize,
@@ -64,10 +64,8 @@ func NewTextElementCentered(x, y float64, w, h int, fnt *truetype.Font, text []s
 
 //NewTextElementStationary returns a new TextElement and creates the image
 func NewTextElementStationary(x, y float64, w, h int, fnt *truetype.Font, text []string, textColor color.Color, fntSize float64) *TextElement {
-	textImage, err := ebiten.NewImage(w, h, ebiten.FilterNearest)
-	if err != nil {
-		log.Fatal(err)
-	}
+	textImage := ebiten.NewImage(w, h)
+
 	t := &TextElement{
 		font:           fnt,
 		fntSize:        fntSize,
@@ -81,6 +79,10 @@ func NewTextElementStationary(x, y float64, w, h int, fnt *truetype.Font, text [
 		visible:        true,
 		Stationary:     true,
 		highlightColor: color.RGBA{153, 153, 0, 255},
+		dropColor:      color.Black,
+	}
+	if t.textColor == color.Black {
+		t.dropColor = color.White
 	}
 	t.fntFace = truetype.NewFace(t.font, &truetype.Options{
 		Size:    t.fntSize,
@@ -110,6 +112,10 @@ func (t *TextElement) Hide() {
 //Show the TextElement
 func (t *TextElement) Show() {
 	t.visible = true
+}
+
+func (t *TextElement) GetDrawImage() *ebiten.Image {
+	return t.drawImage
 }
 
 //Highlighted sets the TextElement to its highlighted color
@@ -144,6 +150,7 @@ func (t *TextElement) drawText(text []string) error {
 			tx += "\n"
 		}
 	}
+	txt.Draw(t.drawImage, tx, t.fntFace, 0+3, int(t.fntSize)+3, t.dropColor)
 	txt.Draw(t.drawImage, tx, t.fntFace, 0, int(t.fntSize), t.textColor)
 
 	return nil
@@ -190,6 +197,11 @@ func (t *TextElement) drawText(text []string) error {
 //SetDropShadow of the TextElement. If true then a second outline will be drawn.
 func (t *TextElement) SetDropShadow(drop bool) {
 	t.dropShadow = drop
+}
+
+//SetDropShadowColor sets the color to be used for the dropshadow
+func (t *TextElement) SetDropShadowColor(color color.Color) {
+	t.dropColor = color
 }
 
 //Update TextElement
@@ -250,9 +262,7 @@ func (t *TextElement) Draw(screen *ebiten.Image, camera *Camera) error {
 	if !t.Stationary {
 		camera.ApplyCameraTransform(op, true)
 	}
-	if err := screen.DrawImage(t.drawImage, op); err != nil {
-		return err
-	}
+	screen.DrawImage(t.drawImage, op)
 	return nil
 }
 
@@ -267,9 +277,7 @@ func (t *TextElement) DrawPosition(screen *ebiten.Image, camera *Camera) error {
 	if !t.Stationary {
 		camera.ApplyCameraTransform(op, true)
 	}
-	if err := screen.DrawImage(t.drawImage, op); err != nil {
-		return err
-	}
+	screen.DrawImage(t.drawImage, op)
 	return nil
 }
 
@@ -284,9 +292,7 @@ func (t *TextElement) DrawApplyZoom(screen *ebiten.Image) error {
 	if !t.Stationary {
 		//ApplyCameraTransform(op, true)
 	}
-	if err := screen.DrawImage(t.drawImage, op); err != nil {
-		return err
-	}
+	screen.DrawImage(t.drawImage, op)
 	return nil
 }
 

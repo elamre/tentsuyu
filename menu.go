@@ -1,6 +1,6 @@
 package tentsuyu
 
-import "github.com/hajimehoshi/ebiten"
+import "github.com/hajimehoshi/ebiten/v2"
 
 //Menu is a collection of MenuElements
 type Menu struct {
@@ -113,7 +113,7 @@ func (m *Menu) Draw(screen *ebiten.Image, camera *Camera) {
 		scalex := float64(m.maxWidth)/100 + .85
 		scaley := float64(m.maxHeight)/100 + .2
 		op := &ebiten.DrawImageOptions{}
-		op.ImageParts = m.backgroundImgParts
+		//op.ImageParts = m.backgroundImgParts
 		//op.GeoM.Translate(-w, -h)
 		op.GeoM.Scale(float64(scalex), float64(scaley))
 		//op.GeoM.Translate(w*float64(scalex), h*float64(scaley))
@@ -121,7 +121,7 @@ func (m *Menu) Draw(screen *ebiten.Image, camera *Camera) {
 		//log.Printf("%v,%v\n", scalex, scaley)
 		//ApplyCameraTransform(op, false)
 
-		screen.DrawImage(m.backgroundImage, op)
+		screen.DrawImage(m.backgroundImgParts.SubImage(m.backgroundImage), op)
 
 	}
 	for x := range m.Elements {
@@ -224,6 +224,36 @@ func (m *MenuElement) Update(input *InputController, offsetX, offsetY float64) b
 		return false
 	}
 	mx, my := input.GetMouseCoords()
+	mouseHighlight := false
+	if m.UIElement.Contains(mx+offsetX, my+offsetY) {
+		if m.Selectable {
+			mouseHighlight = true
+			m.Highlighted()
+			m.highlighted = true
+			if input.LeftClick().JustPressed() {
+
+				if m.Action != nil {
+					m.Action()
+				}
+			}
+		}
+	} else {
+		if m.highlighted == true {
+			m.highlighted = false
+			m.UnHighlighted()
+		}
+	}
+
+	m.UIElement.Update()
+	return mouseHighlight
+}
+
+//UpdateWithCamera the MenuElement in context of the game camera
+func (m *MenuElement) UpdateWithCamera(input *InputController, camera *Camera, offsetX, offsetY float64) bool {
+	if m.hidden {
+		return false
+	}
+	mx, my := input.GetGameMouseCoords(camera)
 	mouseHighlight := false
 	if m.UIElement.Contains(mx+offsetX, my+offsetY) {
 		if m.Selectable {

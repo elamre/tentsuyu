@@ -4,8 +4,8 @@ import (
 	"log"
 	"math/rand"
 
-	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 //GameHelperFunction is a function that takes no parameters and returns an error
@@ -111,7 +111,7 @@ func (g *Game) ToggleFullscreen() {
 
 // Update proceeds the game state.
 // Update is called every tick (1/60 [s] by default).
-func (g *Game) Update(screen *ebiten.Image) error {
+func (g *Game) Update() error {
 	if g.imageLoadedCh != nil || g.audioLoadedCh != nil {
 		select {
 		case g.ImageManager = <-g.imageLoadedCh:
@@ -124,7 +124,7 @@ func (g *Game) Update(screen *ebiten.Image) error {
 		}
 	}
 	if g.imageLoadedCh != nil || g.audioLoadedCh != nil {
-		return ebitenutil.DebugPrint(screen, "Now Loading...")
+		return nil
 	}
 
 	g.Input.Update()
@@ -149,6 +149,11 @@ func (g *Game) Update(screen *ebiten.Image) error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.Screen = screen
 
+	if g.imageLoadedCh != nil || g.audioLoadedCh != nil {
+		ebitenutil.DebugPrint(screen, "Now Loading...")
+		return
+	}
+
 	if err := g.gameState.Draw(g); err != nil {
 		log.Fatal(err)
 	}
@@ -165,18 +170,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 // If you don't have to adjust the screen size with the outside size, just return a fixed size.
 func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return g.screenWidth, g.screenHeight
-}
-
-//Loop is the main game loop
-//This is for backwards compatibility with older ebiten
-func (g *Game) Loop(screen *ebiten.Image) error {
-
-	g.Update(screen)
-	if !ebiten.IsDrawingSkipped() {
-		g.Draw(screen)
-	}
-
-	return nil
 }
 
 //SetMobile tells the game if it's on mobile or not
