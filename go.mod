@@ -1,4 +1,4 @@
-module github.com/atolVerderben/tentsuyu
+module github.com/elamre/tentsuyu
 
 go 1.14
 
