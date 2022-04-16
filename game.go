@@ -14,16 +14,12 @@ type GameHelperFunction func() error
 //GameDrawHelperFunction is meant to draw something on the passed ebiten.Image
 type GameDrawHelperFunction func(*ebiten.Image) error
 
-//GameLoadImagesFunction returns an ImageManager which is used to load new images into the game
-type GameLoadImagesFunction func() *ImageManager
-
-//GameLoadAudioFunction returns an AudioPlayer and is used to load new audio into the game
-type GameLoadAudioFunction func() *AudioPlayer
+//GameLoadAssetsManager returns an AssetsManager which is used to load new assets into the game
+type GameLoadAssetsManager func() *AssetsManager
 
 //Game represents, well... the game
 type Game struct {
-	imageLoadedCh             chan *ImageManager
-	audioLoadedCh             chan *AudioPlayer
+	assetsLoadedChan          chan *AssetsManager
 	gameState                 GameState
 	PausedState               GameState
 	GameData                  *GameData
@@ -32,10 +28,9 @@ type Game struct {
 	UIController              *UIController
 	Random                    *rand.Rand
 	Input                     *InputController
-	ImageManager              *ImageManager
+	AssetsManager             *AssetsManager
 	GameStateLoop             GameHelperFunction
 	GameDrawLoop              GameDrawHelperFunction
-	AudioPlayer               *AudioPlayer
 	AdditionalCameras         map[string]*Camera
 	IsMobile                  bool
 	screenWidth, screenHeight int
@@ -44,19 +39,16 @@ type Game struct {
 //NewGame returns a new Game while setting the width and height of the screen
 func NewGame(screenWidth, screenHeight float64) (game *Game, err error) {
 	game = &Game{
-		imageLoadedCh: make(chan *ImageManager),
-		audioLoadedCh: make(chan *AudioPlayer),
-		GameData:      NewGameData(),
+		assetsLoadedChan: make(chan *AssetsManager),
+		GameData:         NewGameData(),
 		//Random:            rand.New(rand.NewSource(time.Now().UnixNano())),
 		Input:             NewInputController(),
 		DefaultCamera:     CreateCamera(screenWidth, screenHeight),
-		ImageManager:      NewImageManager(),
 		AdditionalCameras: map[string]*Camera{},
 	}
 	game.screenWidth = int(screenWidth)
 	game.screenHeight = int(screenHeight)
 	game.UIController = NewUIController(game.Input)
-	game.AudioPlayer, err = NewAudioPlayer()
 	game.gameState = NewBaseGameState()
 	game.gameState.SetMsg(GameStateMsgNotStarted)
 
@@ -112,18 +104,14 @@ func (g *Game) ToggleFullscreen() {
 // Update proceeds the game state.
 // Update is called every tick (1/60 [s] by default).
 func (g *Game) Update() error {
-	if g.imageLoadedCh != nil || g.audioLoadedCh != nil {
+	if g.assetsLoadedChan != nil {
 		select {
-		case g.ImageManager = <-g.imageLoadedCh:
-
-			g.imageLoadedCh = nil
-		case g.AudioPlayer = <-g.audioLoadedCh:
-
-			g.audioLoadedCh = nil
+		case g.AssetsManager = <-g.assetsLoadedChan:
+			g.assetsLoadedChan = nil
 		default:
 		}
 	}
-	if g.imageLoadedCh != nil || g.audioLoadedCh != nil {
+	if g.assetsLoadedChan != nil {
 		return nil
 	}
 
@@ -149,7 +137,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.Screen = screen
 
-	if g.imageLoadedCh != nil || g.audioLoadedCh != nil {
+	if g.assetsLoadedChan != nil {
 		ebitenutil.DebugPrint(screen, "Now Loading...")
 		return
 	}
@@ -213,33 +201,17 @@ func (g *Game) SetGameDrawLoop(gFunction GameDrawHelperFunction) {
 	g.GameDrawLoop = gFunction
 }
 
-//LoadImages will set the imageLoadedCh to the passed GameHlperFunction
-//This is used to load images before a gamestate is set
-func (g *Game) LoadImages(gFunction GameLoadImagesFunction) {
-	go func() {
-		/*var imageManager *ImageManager
-		if imageManager = gFunction(); imageManager != nil {
-			g.imageLoadedCh <- imageManager
-			//close(g.imageLoadedCh)
-		}*/
-		imageManager := gFunction()
-		g.imageLoadedCh <- imageManager
-
-	}()
-
-}
-
 //LoadAudio will set the audioLoadedCh to the passed GameHelperFunction
 //This is used to load audio before a gamestate is set
-func (g *Game) LoadAudio(gFunction GameLoadAudioFunction) {
+func (g *Game) LoadAssetsManager(gFunction GameLoadAssetsManager) {
 	go func() {
 		/*var audioPlayer *AudioPlayer
 		if audioPlayer = gFunction(); audioPlayer != nil {
 			g.audioLoadedCh <- audioPlayer
 			//close(g.audioLoadedCh)
 		}*/
-		audioPlayer := gFunction()
-		g.audioLoadedCh <- audioPlayer
+		assetsManager := gFunction()
+		g.assetsLoadedChan <- assetsManager
 	}()
 }
 
