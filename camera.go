@@ -1,12 +1,10 @@
 package tentsuyu
 
 import (
+	"github.com/elamre/tentsuyu/tentsuyutils"
+	"github.com/hajimehoshi/ebiten/v2"
 	"math"
 	"math/rand"
-
-	"github.com/atolVerderben/tentsuyu/tentsuyutils"
-
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 //Camera is the entity that follows our player so he doesn't walk off screen
